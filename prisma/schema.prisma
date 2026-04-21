@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String           @id @default(cuid())
+  name         String
+  username     String           @unique
+  passwordHash String           @map("password_hash")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  goalLists    GoalListMember[]
+  goals        Goal[]
+  goalUpdates  GoalUpdate[]
+  createdLists GoalList[]       @relation("CreatedBy")
+  completions  GoalCompletion[]
+
+  @@map("users")
+}
+
+model GoalList {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String           @unique @map("invite_code")
+  createdBy   String           @map("created_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  creator     User             @relation("CreatedBy", fields: [createdBy], references: [id])
+  members     GoalListMember[]
+  goals       Goal[]           @relation("GoalToGoalList")
+
+  @@map("goal_lists")
+}
+
+model GoalListMember {
+  userId     String   @map("user_id")
+  goalListId String   @map("goal_list_id")
+  joinedAt   DateTime @default(now()) @map("joined_at")
+  user       User     @relation(fields: [userId], references: [id])
+  goalList   GoalList @relation(fields: [goalListId], references: [id])
+
+  @@id([userId, goalListId])
+  @@map("goal_list_members")
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Goal {
+  id            String         @id @default(cuid())
+  userId        String         @map("user_id")
+  parentGoalId  String?        @map("parent_goal_id")
+  title         String
+  description   String?
+  deadline      DateTime?
+  status        GoalStatus     @default(NOT_STARTED)
+  recurrence    RecurrenceType @default(NONE)
+  currentStreak Int            @default(0) @map("current_streak")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  completedAt   DateTime?      @map("completed_at")
+  
+  user          User           @relation(fields: [userId], references: [id])
+  
+  parentGoal    Goal?          @relation("GoalToSubGoals", fields: [parentGoalId], references: [id])
+  subGoals      Goal[]         @relation("GoalToSubGoals")
+  
+  goalLists     GoalList[]     @relation("GoalToGoalList")
+  updates       GoalUpdate[]
+  completions   GoalCompletion[]
+
+  @@map("goals")
+}
+
+model GoalCompletion {
+  id        String   @id @default(cuid())
+  goalId    String   @map("goal_id")
+  userId    String   @map("user_id")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goal_completions")
+}
+
+model GoalUpdate {
+  id        String   @id @default(cuid())
+  goalId    String   @map("goal_id")
+  userId    String   @map("user_id")
+  note      String
+  createdAt DateTime @default(now()) @map("created_at")
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goal_updates")
+}
