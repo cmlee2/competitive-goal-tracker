@@ -28,9 +28,9 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const completed = myGoals.filter((g) => g.status === "COMPLETED").length;
-  const inProgress = myGoals.filter((g) => g.status === "IN_PROGRESS").length;
-  const totalStreak = myGoals.reduce((acc, g) => acc + g.currentStreak, 0);
+  const completed = myGoals.filter((g: { status: string }) => g.status === "COMPLETED").length;
+  const inProgress = myGoals.filter((g: { status: string }) => g.status === "IN_PROGRESS").length;
+  const totalStreak = myGoals.reduce((acc: number, g: { currentStreak: number }) => acc + g.currentStreak, 0);
 
   async function handleJoinAction(formData: FormData) {
     "use server";
@@ -107,10 +107,10 @@ export default async function DashboardPage() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
             {memberships.map(({ goalList }) => {
-              const allGoals = [...goalList.goals, ...goalList.goals.flatMap(g => g.subGoals)];
+              const allGoals = [...goalList.goals, ...goalList.goals.flatMap((g: any) => g.subGoals)];
               const totalGoals = allGoals.length;
               const completedGoals = allGoals.filter(
-                (g) => g.status === "COMPLETED"
+                (g: any) => g.status === "COMPLETED"
               ).length;
               const progress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
 
