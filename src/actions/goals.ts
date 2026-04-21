@@ -41,7 +41,7 @@ export async function createGoal(formData: FormData) {
       parentGoalId: parentGoalId || null,
       recurrence,
       goalLists: {
-        connect: goalListIds.map(id => ({ id }))
+        connect: goalListIds.map((id: any) => ({ id }))
       }
     },
   });

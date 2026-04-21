@@ -34,7 +34,7 @@ export default async function ListDetailPage({
 
   if (!list) notFound();
 
-  const isMember = list.members.some((m) => m.userId === user.id);
+  const isMember = list.members.some((m: any) => m.userId === user.id);
   if (!isMember) notFound();
 
   // Validate and reset streaks/status for recurring goals
@@ -178,8 +178,8 @@ export default async function ListDetailPage({
             {/* Goals by member */}
             <section>
               <h2 className="font-bold text-xl text-gray-800 mb-4">Group Progress</h2>
-              {list.members.map(({ user: member }) => {
-                const memberHighLevelGoals = list.goals.filter(g => g.userId === member.id);
+              {list.members.map(({ user: member }: any) => {
+                const memberHighLevelGoals = list.goals.filter((g: any) => g.userId === member.id);
                 if (memberHighLevelGoals.length === 0) return null;
 
                 return (
@@ -195,7 +195,7 @@ export default async function ListDetailPage({
                     </h3>
                     
                     <div className="space-y-4">
-                      {memberHighLevelGoals.map((goal) => (
+                      {memberHighLevelGoals.map((goal: any) => (
                         <div key={goal.id} className="space-y-2">
                           <GoalCard
                             goal={{
@@ -208,7 +208,7 @@ export default async function ListDetailPage({
                           {/* Render Sub-goals */}
                           {goal.subGoals.length > 0 && (
                             <div className="ml-8 border-l-2 border-gray-100 pl-4 space-y-2">
-                              {goal.subGoals.map(subGoal => (
+                              {goal.subGoals.map((subGoal: any) => (
                                 <GoalCard
                                   key={subGoal.id}
                                   goal={{
@@ -238,7 +238,7 @@ export default async function ListDetailPage({
                 <h2 className="font-bold text-gray-900">Leaderboard</h2>
               </div>
               <div className="divide-y divide-gray-100">
-                {leaderboard.map(({ member, completed, total }, i) => (
+                {leaderboard.map(({ member, completed, total }: any, i: number) => (
                   <div
                     key={member.id}
                     className={`flex items-center justify-between px-4 py-4 transition-colors ${

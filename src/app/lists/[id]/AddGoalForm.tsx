@@ -75,7 +75,7 @@ export function AddGoalForm({
             className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">None (High-level goal)</option>
-            {potentialParents.map(goal => (
+            {potentialParents.map((goal: any) => (
               <option key={goal.id} value={goal.id}>{goal.title}</option>
             ))}
           </select>
@@ -85,7 +85,7 @@ export function AddGoalForm({
       <div className="space-y-1">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Share with Groups</label>
         <div className="flex flex-wrap gap-2 py-1">
-          {allUserLists.map(list => (
+          {allUserLists.map((list: any) => (
             <label key={list.id} className="flex items-center gap-2 text-xs font-medium bg-gray-50 hover:bg-indigo-50 border border-gray-200 px-2 py-1.5 rounded-lg cursor-pointer transition-colors">
               <input 
                 type="checkbox" 
