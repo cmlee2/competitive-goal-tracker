@@ -115,7 +115,7 @@ export async function updateGoalStatus(goalId: string, status: GoalStatus) {
     });
   }
 
-  goal.goalLists.forEach(list => {
+  goal.goalLists.forEach((list: { id: string }) => {
     revalidatePath(`/lists/${list.id}`);
   });
 }
@@ -142,7 +142,7 @@ export async function deleteGoal(goalId: string) {
 
   await prisma.goal.delete({ where: { id: goalId } });
 
-  goal.goalLists.forEach(list => {
+  goal.goalLists.forEach((list: { id: string }) => {
     revalidatePath(`/lists/${list.id}`);
   });
 }
