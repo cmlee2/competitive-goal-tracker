@@ -39,7 +39,7 @@ export default async function ListDetailPage({
 
   // Validate and reset streaks/status for recurring goals
   const now = new Date();
-  const goalsToUpdate = list.goals.flatMap(g => [g, ...g.subGoals]).filter(goal => {
+  const goalsToUpdate = list.goals.flatMap((g: any) => [g, ...g.subGoals]).filter((goal: any) => {
     if (goal.recurrence === "NONE") return false;
     
     const lastCompleted = goal.completedAt ? new Date(goal.completedAt) : null;
@@ -77,7 +77,7 @@ export default async function ListDetailPage({
 
   // Perform bulk updates if needed (async, non-blocking for this request ideally, but we'll await for consistency)
   if (goalsToUpdate.length > 0) {
-    await Promise.all(goalsToUpdate.map(async goal => {
+    await Promise.all(goalsToUpdate.map(async (goal: any) => {
       const isDaily = goal.recurrence === "DAILY";
       const lastCompleted = goal.completedAt ? new Date(goal.completedAt) : null;
       let shouldResetStreak = false;
@@ -104,8 +104,8 @@ export default async function ListDetailPage({
   }
 
   const userHighLevelGoals = list.goals
-    .filter(g => g.userId === user.id)
-    .map(g => ({ id: g.id, title: g.title }));
+    .filter((g: any) => g.userId === user.id)
+    .map((g: any) => ({ id: g.id, title: g.title }));
 
   // Helper for week numbers
   function getWeekNumber(d: Date) {
@@ -117,17 +117,17 @@ export default async function ListDetailPage({
 
   // Build leaderboard (count all goals including subgoals)
   const leaderboard = list.members
-    .map(({ user: member }) => {
-      const memberGoals = list.goals.filter((g) => g.userId === member.id);
-      const memberSubGoals = list.goals.flatMap(g => g.subGoals).filter(g => g.userId === member.id);
+    .map(({ user: member }: any) => {
+      const memberGoals = list.goals.filter((g: any) => g.userId === member.id);
+      const memberSubGoals = list.goals.flatMap((g: any) => g.subGoals).filter((g: any) => g.userId === member.id);
       const allGoals = [...memberGoals, ...memberSubGoals];
       const completed = allGoals.filter(
-        (g) => g.status === "COMPLETED"
+        (g: any) => g.status === "COMPLETED"
       ).length;
       const total = allGoals.length;
       return { member, completed, total };
     })
-    .sort((a, b) => b.completed - a.completed);
+    .sort((a: any, b: any) => b.completed - a.completed);
 
   const userLists = await prisma.goalList.findMany({
     where: { members: { some: { userId: user.id } } },

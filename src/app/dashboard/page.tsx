@@ -106,7 +106,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
-            {memberships.map(({ goalList }) => {
+            {memberships.map(({ goalList }: any) => {
               const allGoals = [...goalList.goals, ...goalList.goals.flatMap((g: any) => g.subGoals)];
               const totalGoals = allGoals.length;
               const completedGoals = allGoals.filter(
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
 
                     <div className="flex items-center gap-2">
                       <div className="flex -space-x-2">
-                        {goalList.members.slice(0, 4).map(({ user: member }) => (
+                        {goalList.members.slice(0, 4).map(({ user: member }: any) => (
                           <div
                             key={member.id}
                             className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-black border-2 border-white ring-1 ring-gray-50"
