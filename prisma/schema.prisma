@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id           String           @id @default(cuid())
-  name         String
-  username     String           @unique
-  passwordHash String           @map("password_hash")
+  id           String           @id
+  name         String?
+  email        String?          @unique
+  username     String?          @unique
   createdAt    DateTime         @default(now()) @map("created_at")
   goalLists    GoalListMember[]
   goals        Goal[]
