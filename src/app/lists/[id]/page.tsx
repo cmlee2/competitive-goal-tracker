@@ -66,7 +66,7 @@ export default async function ListDetailPage({
     "use server";
     await toggleInvite(id, !list?.inviteEnabled);
   }
-...
+
   // Validate and reset streaks/status for recurring goals
   const now = new Date();
   const goalsToUpdate = list.goals.flatMap((g: any) => [g, ...g.subGoals]).filter((goal: any) => {
