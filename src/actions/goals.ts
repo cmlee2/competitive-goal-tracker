@@ -15,24 +15,31 @@ export async function createGoal(formData: FormData) {
   const goalListIds = formData.getAll("goalListIds") as string[];
   const parentGoalId = formData.get("parentGoalId") as string;
   const recurrence = (formData.get("recurrence") as RecurrenceType) || "NONE";
+  
+  // Shared Goal fields
+  const isShared = formData.get("isShared") === "on";
+  const targetMetric = formData.get("targetMetric") ? parseInt(formData.get("targetMetric") as string) : null;
+  const unit = formData.get("unit") as string;
 
-  if (!title || goalListIds.length === 0) {
-    return { error: "Title and at least one group are required" };
+  if (!title) {
+    return { error: "Title is required" };
   }
 
   // Verify user is a member of all selected lists
-  const memberships = await prisma.goalListMember.findMany({
-    where: { 
-      userId: user.id,
-      goalListId: { in: goalListIds }
-    },
-  });
+  if (goalListIds.length > 0) {
+    const memberships = await prisma.goalListMember.findMany({
+      where: { 
+        userId: user.id,
+        goalListId: { in: goalListIds }
+      },
+    });
 
-  if (memberships.length !== goalListIds.length) {
-    return { error: "Invalid group selection" };
+    if (memberships.length !== goalListIds.length) {
+      return { error: "Invalid group selection" };
+    }
   }
 
-  await prisma.goal.create({
+  const goal = await prisma.goal.create({
     data: {
       title,
       description: description || null,
@@ -40,15 +47,89 @@ export async function createGoal(formData: FormData) {
       userId: user.id,
       parentGoalId: parentGoalId || null,
       recurrence,
+      isShared,
+      targetMetric,
+      unit: unit || null,
       goalLists: {
-        connect: goalListIds.map((id: any) => ({ id }))
+        connect: goalListIds.map((id: string) => ({ id }))
       }
     },
   });
 
+  revalidatePath("/dashboard");
   goalListIds.forEach(id => {
     revalidatePath(`/lists/${id}`);
   });
+
+  return { success: true, goalId: goal.id };
+}
+
+export async function logGoalProgress(goalId: string, metricDelta: number, note: string) {
+  const user = await requireAuth();
+
+  const goal = await prisma.goal.findUnique({
+    where: { id: goalId },
+    include: { goalLists: { include: { members: true } } }
+  });
+
+  if (!goal) {
+    return { error: "Goal not found" };
+  }
+
+  // Permission check: Owner OR member of one of the goal's lists
+  const isOwner = goal.userId === user.id;
+  const isMemberOfSomeList = goal.goalLists.some(list => 
+    list.members.some(m => m.userId === user.id)
+  );
+
+  if (!isOwner && (!goal.isShared || !isMemberOfSomeList)) {
+    return { error: "Permission denied" };
+  }
+
+  const newMetric = goal.currentMetric + metricDelta;
+  const isNowCompleted = goal.targetMetric ? newMetric >= goal.targetMetric : false;
+
+  await prisma.$transaction(async (tx) => {
+    // Create update
+    await tx.goalUpdate.create({
+      data: {
+        goalId,
+        userId: user.id,
+        note,
+        metricDelta
+      }
+    });
+
+    // Update goal
+    const updateData: any = {
+      currentMetric: newMetric,
+    };
+
+    if (isNowCompleted && goal.status !== "COMPLETED") {
+      updateData.status = "COMPLETED";
+      updateData.completedAt = new Date();
+      
+      await tx.goalCompletion.create({
+        data: {
+          goalId,
+          userId: user.id,
+          note: `Goal target reached: ${newMetric} ${goal.unit || ""}`
+        }
+      });
+    }
+
+    await tx.goal.update({
+      where: { id: goalId },
+      data: updateData
+    });
+  });
+
+  revalidatePath("/dashboard");
+  goal.goalLists.forEach(list => {
+    revalidatePath(`/lists/${list.id}`);
+  });
+
+  return { success: true };
 }
 
 export async function updateGoalStatus(goalId: string, status: GoalStatus) {

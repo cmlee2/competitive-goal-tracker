@@ -45,6 +45,10 @@ export async function joinList(inviteCode: string) {
     throw new Error("Invalid invite code");
   }
 
+  if (!list.inviteEnabled) {
+    throw new Error("This circle is no longer accepting new members.");
+  }
+
   const existing = await prisma.goalListMember.findUnique({
     where: { userId_goalListId: { userId: user.id, goalListId: list.id } },
   });
@@ -55,7 +59,27 @@ export async function joinList(inviteCode: string) {
     });
   }
 
+  revalidatePath("/dashboard");
   redirect(`/lists/${list.id}`);
+}
+
+export async function toggleInvite(listId: string, enabled: boolean) {
+  const user = await requireAuth();
+
+  const list = await prisma.goalList.findUnique({
+    where: { id: listId },
+  });
+
+  if (!list || list.createdBy !== user.id) {
+    throw new Error("Permission denied");
+  }
+
+  await prisma.goalList.update({
+    where: { id: listId },
+    data: { inviteEnabled: enabled },
+  });
+
+  revalidatePath(`/lists/${listId}`);
 }
 
 export async function leaveList(listId: string) {

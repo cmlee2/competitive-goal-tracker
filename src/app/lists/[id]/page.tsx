@@ -4,6 +4,8 @@ import { Navbar } from "@/components/Navbar";
 import { notFound } from "next/navigation";
 import { AddGoalForm } from "./AddGoalForm";
 import { GoalCard } from "./GoalCard";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { toggleInvite } from "@/actions/lists";
 import Link from "next/link";
 
 export default async function ListDetailPage({
@@ -34,9 +36,37 @@ export default async function ListDetailPage({
 
   if (!list) notFound();
 
+  // Fetch Activity Feed data (Updates and Completions)
+  const [updates, completions] = await Promise.all([
+    prisma.goalUpdate.findMany({
+      where: { goal: { goalLists: { some: { id } } } },
+      include: { user: true, goal: true },
+      orderBy: { createdAt: "desc" },
+      take: 15
+    }),
+    prisma.goalCompletion.findMany({
+      where: { goal: { goalLists: { some: { id } } } },
+      include: { user: true, goal: true },
+      orderBy: { createdAt: "desc" },
+      take: 15
+    })
+  ]);
+
+  const activities = [
+    ...updates.map(u => ({ ...u, type: "UPDATE" as const })),
+    ...completions.map(c => ({ ...c, type: "COMPLETION" as const }))
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 20);
+
   const isMember = list.members.some((m: any) => m.userId === user.id);
   if (!isMember) notFound();
 
+  const isCreator = list.createdBy === user.id;
+
+  async function handleToggleInvite() {
+    "use server";
+    await toggleInvite(id, !list?.inviteEnabled);
+  }
+...
   // Validate and reset streaks/status for recurring goals
   const now = new Date();
   const goalsToUpdate = list.goals.flatMap((g: any) => [g, ...g.subGoals]).filter((goal: any) => {
@@ -152,11 +182,27 @@ export default async function ListDetailPage({
               <p className="text-gray-500 mt-2 max-w-2xl">{list.description}</p>
             )}
           </div>
-          <div className="text-right bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Invite Code</p>
-            <code className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm font-bold border border-indigo-100">
-              {list.inviteCode}
-            </code>
+          <div className="flex flex-col items-end gap-3 text-right">
+            {isCreator && (
+              <form action={handleToggleInvite}>
+                <button 
+                  type="submit"
+                  className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                    list.inviteEnabled 
+                      ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" 
+                      : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                  }`}
+                >
+                  Invites: {list.inviteEnabled ? "Active" : "Disabled"}
+                </button>
+              </form>
+            )}
+            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Invite Code</p>
+              <code className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm font-bold border border-indigo-100">
+                {list.inviteCode}
+              </code>
+            </div>
           </div>
         </div>
 
@@ -271,6 +317,16 @@ export default async function ListDetailPage({
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            {/* Activity Feed */}
+            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="font-bold text-gray-900">Recent Activity</h2>
+              </div>
+              <div className="p-4">
+                <ActivityFeed activities={activities as any} />
               </div>
             </section>
           </div>

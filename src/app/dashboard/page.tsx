@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { Navbar } from "@/components/Navbar";
 import Link from "next/link";
 import { joinList } from "@/actions/lists";
+import { GoalCard } from "../lists/[id]/GoalCard";
+import { AddGoalForm } from "../lists/[id]/AddGoalForm";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
@@ -22,14 +24,27 @@ export default async function DashboardPage() {
     orderBy: { joinedAt: "desc" },
   });
 
+  const userLists = await prisma.goalList.findMany({
+    where: { members: { some: { userId: user.id } } },
+    select: { id: true, name: true }
+  });
+
   const myGoals = await prisma.goal.findMany({
     where: { userId: user.id },
-    include: { subGoals: true },
+    include: { subGoals: true, goalLists: true },
     orderBy: { createdAt: "desc" },
   });
 
-  const completed = myGoals.filter((g: { status: string }) => g.status === "COMPLETED").length;
-  const inProgress = myGoals.filter((g: { status: string }) => g.status === "IN_PROGRESS").length;
+  // Private goals are those with NO associated goal lists
+  const privateGoals = myGoals.filter(g => g.goalLists.length === 0);
+  
+  // Potential parents are any goals that don't have a parent themselves
+  const userHighLevelGoals = myGoals
+    .filter((g: any) => g.parentGoalId === null)
+    .map((g: any) => ({ id: g.id, title: g.title }));
+
+  const completed = myGoals.filter((g: any) => g.status === "COMPLETED").length;
+  const inProgress = myGoals.filter((g: any) => g.status === "IN_PROGRESS").length;
   const totalStreak = myGoals.reduce((acc: number, g: { currentStreak: number }) => acc + g.currentStreak, 0);
 
   async function handleJoinAction(formData: FormData) {
@@ -61,6 +76,18 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        {/* Create New Goal */}
+        <section className="mb-12">
+          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+            <span className="w-2 h-8 bg-indigo-600 rounded-full"></span>
+            Add a New Goal
+          </h2>
+          <AddGoalForm 
+            potentialParents={userHighLevelGoals} 
+            allUserLists={userLists} 
+          />
+        </section>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
@@ -90,6 +117,29 @@ export default async function DashboardPage() {
             <div className="text-[10px] font-bold text-indigo-200 mt-3 uppercase tracking-tighter">Record breaker</div>
           </div>
         </div>
+
+        {/* Private Goals Section */}
+        {privateGoals.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <span className="w-2 h-8 bg-orange-500 rounded-full"></span>
+              Private Goals
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {privateGoals.map((goal: any) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={{
+                    ...goal,
+                    deadline: goal.deadline?.toISOString() ?? null,
+                    completedAt: goal.completedAt?.toISOString() ?? null,
+                  }}
+                  isOwner={true}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
           <span className="w-2 h-8 bg-indigo-600 rounded-full"></span>

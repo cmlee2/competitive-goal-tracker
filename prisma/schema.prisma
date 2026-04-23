@@ -27,6 +27,7 @@ model GoalList {
   name        String
   description String?
   inviteCode  String           @unique @map("invite_code")
+  inviteEnabled Boolean          @default(true) @map("invite_enabled")
   createdBy   String           @map("created_by")
   createdAt   DateTime         @default(now()) @map("created_at")
   creator     User             @relation("CreatedBy", fields: [createdBy], references: [id])
@@ -70,6 +71,10 @@ model Goal {
   status        GoalStatus     @default(NOT_STARTED)
   recurrence    RecurrenceType @default(NONE)
   currentStreak Int            @default(0) @map("current_streak")
+  isShared      Boolean        @default(false) @map("is_shared")
+  targetMetric  Int?           @map("target_metric")
+  currentMetric Int            @default(0) @map("current_metric")
+  unit          String?
   createdAt     DateTime       @default(now()) @map("created_at")
   completedAt   DateTime?      @map("completed_at")
   
@@ -102,6 +107,7 @@ model GoalUpdate {
   goalId    String   @map("goal_id")
   userId    String   @map("user_id")
   note      String
+  metricDelta Int?     @map("metric_delta")
   createdAt DateTime @default(now()) @map("created_at")
   goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

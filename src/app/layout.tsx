@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PWARegistration } from "@/components/PWARegistration";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,8 +36,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#4f46e5" />
       </head>
       <body className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-        <PWARegistration />
-        {children}
+        <Providers>
+          <PWARegistration />
+          {children}
+        </Providers>
       </body>
     </html>
   );

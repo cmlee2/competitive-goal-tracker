@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 export async function Navbar() {
   const session = await auth();
@@ -13,19 +13,15 @@ export async function Navbar() {
         {session?.user && (
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{session.user.name}</span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
+            <button
+              onClick={async () => {
+                const { signOut } = await import("next-auth/react");
+                await signOut({ callbackUrl: "/login" });
               }}
+              className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
             >
-              <button
-                type="submit"
-                className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
-              >
-                Sign out
-              </button>
-            </form>
+              Sign out
+            </button>
           </div>
         )}
       </div>
